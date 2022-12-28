@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 
 struct DateButton: ButtonStyle {
@@ -13,6 +14,29 @@ struct DateButton: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 1.2 : 1)
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
+    }
+}
+
+
+
+struct ReminderLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.icon
+                .scaleEffect(0.8, anchor: .center)
+            configuration.title
+                .font(.title2)
+        }
+    }
+}
+
+
+struct InfoLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 1){
+            configuration.icon
+            configuration.title
+        }
     }
 }
 
@@ -231,11 +255,24 @@ struct ReminderView: View {
             types = []
             dates = []
         }
+        var reminders_: [String] = []
+        var types_: [Int] = []
+        var dates_: [Date] = []
+        
+        for i in 0..<reminders.count{
+            if difference_between(a: dates[i], b: Date_().date) >= 0 || types[i] != 0{
+                reminders_.append(reminders[i])
+                types_.append(types[i])
+                dates_.append(dates[i])
+            }
+        }
+        reminders = reminders_
+        types = types_
+        dates = dates_
     }
     
     func difference_between(a: Date, b: Date) -> Int{
-        print(Int(a - b))
-        return Int(a - b)
+        return Int((a - b) / 86400)
     }
     
     var body: some View {
@@ -250,51 +287,180 @@ struct ReminderView: View {
                     ScrollView(showsIndicators: false){
                         LazyVStack {
                             ForEach(0..<reminders.count, id: \.self) { i in
-                                if types[i] == 0{
-                                    if difference_between(a: dates[i], b: Date_().date) == 0{
-                                        Form{
-                                            Label(reminders[i], systemImage: "circle.fill")
-                                                .imageScale(.small)
-                                        }
-                                        .formStyle(.grouped)
+                                if types[i] == 0 && difference_between(a: dates[i], b: Date_().date) == 0{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Normal")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
                                     }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 1{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Daily")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 2 && difference_between(a: dates[i], b: Date_().date) % 7 == 0{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Weekly")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 3 && Date_(date: dates[i]).get_date() == Date_().get_date(){
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Monthly")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
                                 }
                             }
                         }
                     }
                 }
             }.padding()
-            Spacer()
             Section{
-                ScrollView(showsIndicators: false){
-                    VStack(alignment: .leading){
-                        Label("Scheduled", systemImage: "calendar")
-                            .font(.system(.title, design: .rounded, weight: .bold))
-                            .foregroundColor(.red)
-                        Divider()
-                            .padding(.horizontal)
-                        Text("hello")
-                        Text("hello")
+                VStack(alignment: .leading){
+                    Label("Scheduled", systemImage: "calendar")
+                        .font(.system(.title, design: .rounded, weight: .bold))
+                        .foregroundColor(.red)
+                    Divider()
+                        .padding(.horizontal)
+                    ScrollView(showsIndicators: false){
+                        LazyVStack {
+                            ForEach(0..<reminders.count, id: \.self) { i in
+                                let date = Date_(date: dates[i])
+                                if types[i] == 0{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        HStack{
+                                            Text("Normal")
+                                                .font(.caption)
+                                                .background(Capsule().fill(Color("bg")).padding(-3))
+                                            Label(date.get_string_human(), systemImage: "calendar")
+                                                .font(.caption)
+                                                .background(Capsule().fill(Color("bg")).padding(-3))
+                                                .labelStyle(InfoLabelStyle())
+                                        }
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 1{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(InfoLabelStyle())
+                                        Text("Daily")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 2{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        HStack{
+                                            Text("Weekly")
+                                                .font(.caption)
+                                                .background(Capsule().fill(Color("bg")).padding(-3))
+                                            Label(date.get_day(), systemImage: "calendar")
+                                                .font(.caption)
+                                                .background(Capsule().fill(Color("bg")).padding(-3))
+                                                .labelStyle(InfoLabelStyle())
+                                        }
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 3{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        HStack{
+                                            Text("Monthly")
+                                                .font(.caption)
+                                                .background(Capsule().fill(Color("bg")).padding(-3))
+                                            Label(String(describing: date.get_date()), systemImage: "calendar")
+                                                .font(.caption)
+                                                .background(Capsule().fill(Color("bg")).padding(-3))
+                                                .labelStyle(InfoLabelStyle())
+                                        }
+                                    }
+                                    .formStyle(.grouped)
+                                }
+                            }
+                        }
+
                     }
                 }
             }.padding()
             Spacer()
             Section{
-                ScrollView(showsIndicators: false){
-                    VStack(alignment: .leading){
-                        Label(selectedDate.get_string_human(), systemImage: "calendar.circle")
-                            .font(.system(.title, design: .rounded, weight: .bold))
-                            .foregroundColor(.yellow)
-                        Divider()
-                            .padding(.horizontal)
-                        Text("hello")
-                        Text("hello")
+                VStack(alignment: .leading){
+                    Label(selectedDate.get_string_human(), systemImage: "calendar.circle")
+                        .font(.system(.title, design: .rounded, weight: .bold))
+                        .foregroundColor(.yellow)
+                    Divider()
+                        .padding(.horizontal)
+                    ScrollView(showsIndicators: false){
+                        LazyVStack {
+                            ForEach(0..<reminders.count, id: \.self) { i in
+                                if types[i] == 0 && difference_between(a: dates[i], b: selectedDate.date) == 0{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Normal")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 1{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Daily")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 2 && difference_between(a: dates[i], b: selectedDate.date) % 7 == 0{
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Weekly")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                } else if types[i] == 3 && Date_(date: dates[i]).get_date() == selectedDate.get_date(){
+                                    Form{
+                                        Label(reminders[i], systemImage: "circle")
+                                            .labelStyle(ReminderLabelStyle())
+                                        Text("Monthly")
+                                            .font(.caption)
+                                            .background(Capsule().fill(Color("bg")).padding(-3))
+                                    }
+                                    .formStyle(.grouped)
+                                }
+                            }
+                        }
                     }
                 }
             }.padding()
         }
             .toolbar{
-                Image(systemName: "plus")
+                Button{
+                    
+                } label: {
+                    Image(systemName: "plus")
+                }
             }
             .frame(minWidth: 400)
     }
@@ -310,7 +476,7 @@ struct ContentView: View {
             CalendarView(selectedDate: $selectedDate)
         } detail: {
             ReminderView(selectedDate: $selectedDate)
-                .frame(minWidth: 400)
+                .frame(minWidth: 400, minHeight: 500)
         }
         #else
         TabView(selection: $selection) {
