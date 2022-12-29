@@ -102,8 +102,7 @@ struct MonthView: View {
                         Text(i).font(.title3).bold().foregroundColor(Color.primary)
                     }
                 }
-            }
-            .padding(.horizontal)
+            }.padding()
             Divider()
             LazyVGrid(columns: columns){
                 ForEach(0..<self.days_before_month, id: \.self){_ in
@@ -482,6 +481,11 @@ struct ReminderView: View {
                                                 Text("Weekly").tag(2)
                                                 Text("Monthly").tag(3)
                                             }
+                                            Button("Cancel") {
+                                                reminder = ""
+                                                type = 0
+                                                new = false
+                                            }
                                             Button("Done") {
                                                 set_reminder()
                                             }
@@ -528,6 +532,8 @@ struct ReminderView: View {
         reminders.append(reminder)
         types.append(type)
         dates.append(selectedDate.date)
+        reminder = ""
+        type = 0
         new = false
         let content = UNMutableNotificationContent()
         content.title = "Reminder"
